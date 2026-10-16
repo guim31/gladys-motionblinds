@@ -1,61 +1,169 @@
-# Demo Devices Template
+# Motionblinds
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+## Overview
 
-## What you get
+This integration drives **Motionblinds** blinds, shutters and curtains (Coulisse) and the sister brands sold in
+Europe on the same platform (Brel Home, Bloc Blinds, Dooya, Acmeda Automate Pulse 2...) from Gladys, **locally**,
+through the **Motion Wi-Fi bridge** (CM-20, CM-32...) or a Motion Wi-Fi motor. No cloud, no account: Gladys talks to
+the bridge on your network, with the same protocol as the Motion app.
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+Each blind becomes a Gladys device: open / close / stop, its position, the slat tilt of venetian blinds, the battery
+of battery motors and the radio signal.
+
+> **Developed without the hardware: feedback welcome.** The integration was written from the protocol as the
+> open-source motionblinds library and Home Assistant use it, and tested against a simulated bridge. If something
+> behaves oddly with your blinds, open an issue on
+> [github.com/guim31/gladys-motionblinds/issues](https://github.com/guim31/gladys-motionblinds/issues).
+
+This integration is not affiliated with Coulisse / Motionblinds.
+
+## Requirements
+
+- Gladys Assistant 5.1 or later.
+- A Motion Wi-Fi bridge (or Motion Wi-Fi motors), set up in the Motion app, on the same network as Gladys.
+- The **key** of the Motion app (see below).
+- Better: a fixed IP address for the bridge (a DHCP reservation in your router).
 
 ## Configuration
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+Install the integration from the Gladys store, then open its **Configuration** tab.
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+### The key of the Motion app
 
-## Actions
+The bridge only obeys a request signed with the key of your Motion account:
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+1. open the Motion app on your phone;
+2. tap **⋮** (top right), then **Settings**;
+3. open the **About** page ("Motion APP About") and tap it **five times quickly**;
+4. a window shows the key: **16 characters with dashes**, such as `12ab345c-d67e-8f`.
 
-## Scenes
+Copy it as it is, dashes included, into **Key of the Motion app**. It is stored by Gladys as a secret and never
+written to the integration logs. If your blinds use another brand's app built on the Motion platform, the key usually
+hides in its About page the same way.
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+### The bridge address
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+**IP address of the Motion bridge**: the address your router gave the bridge. For several bridges, or Motion Wi-Fi
+motors (each one is its own bridge), separate the addresses with commas.
 
-## Dashboard
+Left empty, Gladys asks the network for Motion bridges on its own (a discovery request on UDP port 32100, emitted by
+Gladys for the integration). Some bridges only answer the Motion app's multicast group: if nothing is found, type
+the address.
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+### The other settings
+
+- **Refresh interval**: how often Gladys reads the state of the blinds (10 to 60 seconds, 30 by default). See
+  "How the state is refreshed".
+- **Allow controlling garage doors and gates**: off by default (see below).
+- **Language of the device names**: names given to the new devices and to their features.
+
+Then run **Search for bridges and blinds**: it lists the bridges found, their blinds, and checks the key with a
+status query (nothing moves). Open the **Discovery** tab and add your blinds.
+
+## Devices
+
+One device per blind, named after its type in the Motion app ("Roller blind 0001", "Venetian blind 0002"...):
+rename it in Gladys. Curtains are in the curtain category, everything else in the shutter category.
+
+### Features
+
+| Feature               | What it does                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| **Open / close**      | Open, stop, close. Shows open or closed at the ends, stopped in between, the way it moves. |
+| **Position**          | 0 % = closed, 100 % = open, like every Gladys shutter.                                     |
+| **Slat tilt**         | Venetian, Shangri-La and vertical blinds, double rollers: 100 % = slats open, 0 % = shut.  |
+| **Top rail position** | Top-down bottom-up blinds: the top rail (the position is the bottom rail).                 |
+| **Battery**           | Battery motors: the level, computed from the pack voltage.                                 |
+| **Charging**          | Battery motors that report it (solar panel, charger).                                      |
+| **Radio signal**      | Two-way motors: the radio signal between the motor and the bridge, in dBm.                 |
+
+What a motor cannot tell is not published: a one-way motor only gets **Open / close** (it shows the last command
+sent), a motor that only knows its end limits gets no position. When the slat tilt is set, a new position keeps it,
+like the Motion app does.
+
+The slat tilt is a second slider, because Gladys has no tilt feature: in HomeKit it appears as a second covering
+named after it.
+
+### Garage doors and gates
+
+A Motion Wi-Fi garage door motor and a blind of type "Roller gate" open the house. By default they are published
+**read-only**: their state shows, but neither Gladys nor a scene nor a voice assistant can move them. Turn on
+**Allow controlling garage doors and gates** to control them, then accept the update Gladys offers in the Discovery
+tab. The widget buttons never move them, even then.
+
+## Widget
+
+**Motion blinds**: every Motion blind added to Gladys on one card, sorted by name, with where each one stands, a
+battery below 20 % and the blinds that no longer answer. Its buttons act on all of them at once:
+
+- **Open all** and **Close all** (with a confirmation);
+- **Stop all**.
+
+Garage doors and gates are listed but never moved by these buttons.
+
+## Scene trigger
+
+**Blind moved outside Gladys**: a blind changed position without a command from Gladys: from its remote, the Motion
+app, a Motion timer or a sun sensor. Filters: the blind, and the direction (Opened, Closed; empty for both). The
+scene gets the direction (`opening`, `closing`) and the new position in %.
+
+A change is seen at the next reading (30 s by default). Changes in the 3 minutes after a Gladys command count as
+Gladys's own.
+
+## Scene action
+
+**Go to the favorite position**: the blind goes to the favorite position stored in its motor (set beforehand with
+the Motion remote). Open, close, a position and a slat tilt are the usual Gladys "Control a device" actions.
+
+## Scene examples
+
+- **At sunset, close the bedroom**: trigger "Sunset", action "Control a device" → the bedroom blind's
+  **Open / close** on "Close".
+- **Summer heat**: if the outdoor temperature goes above 28 °C between noon and 5 pm, set the **Position** of the
+  south blinds to 20 % and their **Slat tilt** to 30 %.
+- **Manual override**: trigger **Blind moved outside Gladys** on the living room, direction "Opened" → send a
+  message "Living room blind opened by hand", and let your automatic scenes check that before closing it again.
+- **Wake-up**: at 7:30 on weekdays, **Go to the favorite position** for the bedroom blind.
+- **Battery**: when a **Battery** goes below 15 %, send a message.
+
+## How the state is refreshed
+
+The bridge pushes every change in multicast, which never reaches the integration's container (Gladys runs it on a
+private Docker network). So the integration reads the blinds itself:
+
+- every **refresh interval** (30 s by default), it reads the state the bridge keeps for each blind added to Gladys.
+  This costs the motors nothing: no radio traffic, the bridge answers from its memory, which follows the motors'
+  own reports;
+- every **15 minutes**, it asks each two-way motor for its state over the radio (Home Assistant does it every 10).
+  A battery motor wakes up briefly for it;
+- after a command, it asks the motor every 5 seconds (10 for a Wi-Fi motor) until it stops, 2 minutes at most.
+
+No cloud, no quota: everything stays between Gladys and the bridge, one request at a time, as the bridge expects.
+Gladys may poll the blinds as well; a blind read less than half an interval before is skipped.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"No Motion bridge found"**: type the bridge address in the configuration. Check that Gladys and the bridge are on
+  the same network, and that the bridge answers in the Motion app.
+- **"The Motion bridge refused the key"**: copy the key again from the Motion app, dashes included (16 characters).
+  A new Motion account changes the key.
+- **"No Motion bridge answers"**: the bridge is off, or changed address: give it a fixed address in your router.
+- **A blind is missing**: pair it with the bridge in the Motion app, then run **Search for bridges and blinds**.
+- **The position lags behind**: a change made with the remote shows at the next reading; lower the refresh interval.
+- **More details**: set `LOG_LEVEL=debug` on the integration (logs never show the key).
+
+## Limits
+
+- Developed without the hardware: the protocol details come from the open-source motionblinds library and Home
+  Assistant; untested blind types (top-down bottom-up, triangle, double rollers, Wi-Fi garage doors) may need fixes.
+- Changes made outside Gladys show at the next reading, not instantly (no multicast in the container).
+- The automatic discovery may not find every bridge: the address can always be typed.
+- A one-way motor tells nothing: Gladys shows the last command it sent, not what the blind did.
+- A top-down bottom-up blind: open / close moves both rails; the two sliders move one rail each.
+- The bridge's own Wi-Fi signal and the motors' end-limit settings are not exposed; set them in the Motion app.
+
+## Support
+
+Questions and bug reports: [github.com/guim31/gladys-motionblinds/issues](https://github.com/guim31/gladys-motionblinds/issues),
+or the Gladys community forum. Please give your bridge model, the blind types and the integration logs (they never
+contain the key).

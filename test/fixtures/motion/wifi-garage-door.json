@@ -1,0 +1,32 @@
+{
+  "description": "A Motion Wi-Fi garage door motor (no bridge).",
+  "deviceList": {
+    "msgType": "GetDeviceListAck",
+    "mac": "0a0b0c0d3e4f",
+    "deviceType": "22000005",
+    "ProtocolVersion": "0.9",
+    "token": "H8G7F6E5D4C3B2A1",
+    "data": [
+      {
+        "mac": "0a0b0c0d3e4f",
+        "deviceType": "22000005"
+      }
+    ]
+  },
+  "devices": {
+    "0a0b0c0d3e4f": {
+      "msgType": "ReadDeviceAck",
+      "mac": "0a0b0c0d3e4f",
+      "deviceType": "22000005",
+      "data": {
+        "type": 7,
+        "operation": 2,
+        "currentPosition": 100,
+        "currentState": 3,
+        "voltageMode": 0,
+        "wirelessMode": 3,
+        "RSSI": -61
+      }
+    }
+  }
+}
