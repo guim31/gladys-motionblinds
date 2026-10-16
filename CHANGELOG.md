@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-16
+
 ### Added
 
 - Motionblinds blinds, shutters and curtains (and the sister brands on the same
@@ -33,4 +35,5 @@ the notes of the version's GitHub Release.
   and open, stop or close them all.
 - Texts and documentation in English, French, German and Spanish.
 
-[Unreleased]: https://github.com/guim31/gladys-motionblinds/commits/main
+[Unreleased]: https://github.com/guim31/gladys-motionblinds/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/guim31/gladys-motionblinds/releases/tag/v1.0.1

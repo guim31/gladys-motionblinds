@@ -1,6 +1,6 @@
 {
   "name": "gladys-motionblinds",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Gladys Assistant integration for Motionblinds blinds, shutters and curtains, over the local Motion Wi-Fi bridge.",
   "type": "module",
