@@ -1,0 +1,35 @@
+{
+  "description": "A Motion Wi-Fi curtain motor (no bridge): it answers GetDeviceList with itself.",
+  "deviceList": {
+    "msgType": "GetDeviceListAck",
+    "mac": "0a0b0c0d1e2f",
+    "deviceType": "22000000",
+    "ProtocolVersion": "0.9",
+    "fwVersion": "A1.0.6_B0.1.0",
+    "token": "A1B2C3D4E5F6G7H8",
+    "data": [
+      {
+        "mac": "0a0b0c0d1e2f",
+        "deviceType": "22000000"
+      }
+    ]
+  },
+  "devices": {
+    "0a0b0c0d1e2f": {
+      "msgType": "ReadDeviceAck",
+      "mac": "0a0b0c0d1e2f",
+      "deviceType": "22000000",
+      "data": {
+        "type": 12,
+        "operation": 2,
+        "currentPosition": 100,
+        "currentAngle": 0,
+        "currentState": 3,
+        "voltageMode": 0,
+        "batteryLevel": 0,
+        "wirelessMode": 3,
+        "RSSI": -48
+      }
+    }
+  }
+}

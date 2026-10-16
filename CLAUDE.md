@@ -5,9 +5,10 @@ contributors.
 
 ## What this is
 
-A Gladys Assistant **external integration**: a Node.js service (Node 22+, ESM,
-no build step) that runs in its own sandboxed Docker container and talks to
-Gladys through
+A Gladys Assistant **external integration** for **Motionblinds** blinds,
+shutters and curtains, driven locally through the Motion Wi-Fi bridge (UDP
+JSON protocol, port 32100): a Node.js service (Node 22+, ESM, no build step)
+that runs in its own sandboxed Docker container and talks to Gladys through
 [`@gladysassistant/integration-sdk`](https://github.com/GladysAssistant/integration-sdk-js),
 its only runtime dependency. It started from the official JavaScript template.
 
@@ -16,12 +17,13 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/hub.test.js              # one file
+node --test --test-name-pattern "gate"    # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
 npx github:GladysAssistant/integration-store .   # store admission checks
+node scripts/probe.mjs <ip> <key> [--raw]        # read a real bridge (read-only)
 ```
 
 The CI (`.github/workflows/ci.yml`) runs `format:check`, `lint` and `test` on
@@ -31,16 +33,28 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+index.js                          SDK wiring only: registerHandlers + connect()
+src/app.js                        every SDK handler, registered before connect(); returns the hub
+src/hub.js                        lifecycle, discovery, own polling timer, follow-up after a command,
+                                  states, transports, connection status, trigger, commands
+src/devices.js                    blind → Gladys device: capabilities, names (4 languages), features,
+                                  values (positions turned around), WriteDevice data of the commands
+src/motion/protocol.js            Motion protocol: message types, AccessToken (AES-128-ECB),
+                                  parsing of GetDeviceListAck / ReadDeviceAck, battery formula
+src/motion/transport.js           UDP request/answer, one at a time per bridge, retries, long answers
+src/motion/bridge.js              one bridge: token, read/write with token renewal, key refusal
+src/discovery.js                  mediated discovery (udp-active-broadcast, port 32100)
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/widgets.js                    dashboard widget `blinds` (manifest `widgets`)
+src/texts.js                      connection status and search report texts (4 languages)
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+src/store.js, src/problems.js     /data persistence; repeated failures logged once
+scripts/probe.mjs                 read-only probe of a real bridge (anonymized fixture output)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys, same sections
 test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+test/helpers/fakeBridge.js        simulated Motion bridge on a fake UDP network
+test/fixtures/motion/             bridge answers (rebuilt from public sources, see its README)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +84,10 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in four languages (English, French, German with
+  "du", Spanish with "usted"): action messages, manifest texts, feature names,
+  widget texts and `docs/{en,fr,de,es}.md`, kept in sync. `test/i18n.test.js`
+  checks it.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +249,41 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Motionblinds : protocole et pièges (découverts en écrivant cette intégration)
+
+Sources : bibliothèque `motionblinds` (starkillerOG, MIT) et intégration Home Assistant `motion_blinds`
+(Apache-2.0). **Développée sans le matériel** : rien ici n'a été vérifié sur un vrai pont.
+
+- **Protocole** : JSON en UDP, port 32100, une requête, une réponse. `GetDeviceList` (sans clé) donne le MAC du pont,
+  son type (`02000001`/`02000002`, ou `22xxxxxx` pour un moteur Wi-Fi qui est son propre pont), un `token` de 16
+  caractères et la liste des stores. `ReadDevice` lit le **cache** du pont (aucune radio) ; `WriteDevice` envoie une
+  commande et répond par le cache **d'avant** le mouvement. `{ operation: 5 }` demande son état au moteur par radio :
+  la réponse arrive dans le cache, pas dans l'accusé.
+- **AccessToken** = AES-128-ECB(clé de l'appli, token), hexadécimal majuscule, sans bourrage. Une clé fausse ou un
+  token périmé donnent un `actionResult` (« AccessToken error » d'après HA) : on redemande le token une fois, un
+  second refus signifie une clé refusée. Vecteur de test vérifié avec OpenSSL dans `test/protocol.test.js`.
+- **Multicast inaccessible** : le pont pousse ses changements sur 238.0.0.18:32101 ; le conteneur en pont Docker ne
+  les reçoit jamais. D'où la lecture du cache à l'intervalle, une requête radio toutes les 15 min par moteur
+  bidirectionnel, et le suivi toutes les 5 s après une commande (jusqu'à la cible, l'immobilité ou 2 min).
+- **Découverte médiée** : `udp-active-broadcast` sur 32100 avec un `GetDeviceList`. Le pont répond peut-être
+  seulement au groupe multicast : non vérifié, l'adresse saisie reste la voie sûre.
+- **Positions inversées** : moteur 0 = ouvert, Gladys 100 = ouvert (« 0% = fermé » dans le front). Angle 0-180,
+  0 = lamelles ouvertes ; un Shangri-La ou un store double compte 0-90 (mis à l'échelle).
+- **Pas d'inclinaison dans Gladys** : les lamelles sont un second `shutter/position`. Deux fonctionnalités de même
+  _type_ font afficher leurs noms au tableau de bord (`shouldDisplayDeviceName` compare le type seul) et HomeKit en
+  fait un second service nommé. Un `switch/dimmer` seul aurait affiché le nom de l'appareil.
+- **Modes radio** (`wirelessMode`) : 0 unidirectionnel (aucun état : on affiche la dernière commande), 2 fins de
+  course seulement (pas de position), 4 pourcentage virtuel (position seulement si `currentState` ≥ 3).
+- **Store haut-bas** (`10000001`) : champs `_T`/`_B` ; position = rail bas, second curseur = rail haut ; les rails ne
+  se croisent pas.
+- **Portes de garage** (`22000005`, type 7) : `read_only` tant que `allow_gates` est faux ; jamais bougées par le
+  widget.
+- **Batterie** : `batteryLevel` en centièmes de volt ; formule de la bibliothèque (2, 3 ou 4 éléments), `null` pour un
+  moteur secteur (≥ 100 V). Les fonctionnalités vues une fois (batterie, charge, signal) sont gardées (`profile` dans
+  `/data`) pour ne pas changer la structure à chaque lecture.
+- **Tests** : le faux pont (`test/helpers/fakeBridge.js`) vérifie l'AccessToken, renouvelle son token, perd des
+  datagrammes, coupe une longue liste en plusieurs datagrammes et sépare `motors` (la réalité) et `cache` (ce que le
+  pont répond). L'horloge du hub est injectée (`now`) : `world.poll()` avance d'une période.
+- **Capture des journaux en test** : le rapporteur de `node --test` écrit sur le même stdout ; ne capturer que les
+  lignes de journal (`[horodatage] [NIVEAU]`), sinon un résultat de test est avalé et disparaît du décompte.

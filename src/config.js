@@ -1,45 +1,79 @@
 // -----------------------------------------------------------------------------
-// Integration configuration.
-//
-// The configuration is filled in by the user in Gladys, from the `config_schema`
-// declared in `gladys-assistant-integration.json`. The SDK fetches it for you
-// (`gladys.getConfig()`) and notifies you of every change through
-// `gladys.onConfigUpdated()`.
-//
-// This module only provides defaults and normalizes the received object, so the
-// rest of the code never has to deal with `undefined`.
+// Integration configuration: defaults (they mirror the `default` values of the
+// manifest `config_schema`, see test/manifest.test.js) and normalization, so
+// the rest of the code never deals with strings, blanks or `undefined`.
 // -----------------------------------------------------------------------------
 
-// Defaults: they MUST stay consistent with the `default` values declared in the
-// `config_schema` of the manifest.
+import { isValidKey } from './motion/protocol.js';
+
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
+// Seconds between two reads of the blinds (`poll_interval` options): each one
+// is also a `poll_frequency` Gladys accepts.
+export const POLL_INTERVALS = [10, 15, 30, 60];
+
 export const DEFAULT_CONFIG = {
-  latitude: 48.8566, // Paris
-  longitude: 2.3522,
-  unit: 'celsius', // 'celsius' | 'fahrenheit'
-  // Seconds between two reads of the polled sensors. Gladys polls at most once
-  // a minute: slower intervals are applied by skipping polls (see
-  // createPoller in src/devices/index.js).
-  poll_frequency: 300,
-  // Reserved key (NOT in config_schema): because the manifest declares both
-  // 'local' and 'cloud' in its `transports` field, Gladys shows a standard
-  // "Prefer the local connection" toggle and sends the user's choice here.
-  // Read-only for the integration; defaults to true.
-  GLADYS_PREFER_LOCAL: true,
+  hosts: '',
+  key: '',
+  poll_interval: '30',
+  allow_gates: false,
+  language: 'fr',
 };
 
+const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+const MAX_HOSTS = 16;
+
 /**
- * Merge the user config with the defaults.
- * @param {Record<string, unknown>} raw config returned by the SDK
+ * Parse the bridge address list (commas, semicolons, spaces or new lines).
+ * The bridges answer on a fixed UDP port and are matched on the address the
+ * answer comes from: IPv4 addresses only.
+ * @param {unknown} raw
+ * @returns {{ hosts: string[], invalid: string[] }}
+ */
+export function parseHosts(raw) {
+  const hosts = [];
+  const invalid = [];
+  const entries = typeof raw === 'string' ? raw.split(/[\s,;]+/) : [];
+  for (const entry of entries) {
+    const host = entry.trim();
+    if (!host) {
+      continue;
+    }
+    const match = host.match(IPV4);
+    if (!match || !match.slice(1).every((part) => Number(part) <= 255)) {
+      invalid.push(host);
+    } else {
+      // Leading zeros would make another string for the same address.
+      const normalized = match.slice(1).map(Number).join('.');
+      if (!hosts.includes(normalized) && hosts.length < MAX_HOSTS) {
+        hosts.push(normalized);
+      }
+    }
+  }
+  return { hosts, invalid };
+}
+
+const isTrue = (value) => value === true || value === 'true' || value === 1 || value === '1';
+
+/**
+ * @param {Record<string, unknown>} raw the configuration returned by the SDK
  */
 export function normalizeConfig(raw = {}) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const { hosts, invalid } = parseHosts(
+    typeof source.hosts === 'string' ? source.hosts : DEFAULT_CONFIG.hosts,
+  );
+  const key = typeof source.key === 'string' ? source.key.trim() : '';
+  const interval = Number(source.poll_interval ?? DEFAULT_CONFIG.poll_interval);
   return {
-    ...DEFAULT_CONFIG,
-    ...raw,
-    // Force the types: config may arrive as strings from a form.
-    latitude: Number(raw.latitude ?? DEFAULT_CONFIG.latitude),
-    longitude: Number(raw.longitude ?? DEFAULT_CONFIG.longitude),
-    poll_frequency: Number(raw.poll_frequency ?? DEFAULT_CONFIG.poll_frequency),
-    // The preference is a boolean; anything but an explicit false means true.
-    GLADYS_PREFER_LOCAL: raw.GLADYS_PREFER_LOCAL !== false,
+    hosts,
+    invalidHosts: invalid,
+    key,
+    keyStatus: key === '' ? 'missing' : isValidKey(key) ? 'ok' : 'invalid',
+    pollSeconds: POLL_INTERVALS.includes(interval)
+      ? interval
+      : Number(DEFAULT_CONFIG.poll_interval),
+    allowGates: isTrue(source.allow_gates ?? DEFAULT_CONFIG.allow_gates),
+    language: LANGUAGES.includes(source.language) ? source.language : DEFAULT_CONFIG.language,
   };
 }

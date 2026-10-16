@@ -1,0 +1,185 @@
+{
+  "description": "A Motion bridge (CM-20, protocol 0.9) with eight blinds: a battery roller blind, a mains venetian blind, a curtain, a one-way roller shutter, a roller gate, a top-down bottom-up blind, a double roller and a limits-only roman blind.",
+  "deviceList": {
+    "msgType": "GetDeviceListAck",
+    "mac": "0a0b0c0d0e0f",
+    "deviceType": "02000002",
+    "ProtocolVersion": "0.9",
+    "fwVersion": "A1.1.1_B0.1.2",
+    "token": "12345A678B9CDEFG",
+    "data": [
+      {
+        "mac": "0a0b0c0d0e0f",
+        "deviceType": "02000002"
+      },
+      {
+        "mac": "0a0b0c0d0e0f0001",
+        "deviceType": "10000000"
+      },
+      {
+        "mac": "0a0b0c0d0e0f0002",
+        "deviceType": "10000000"
+      },
+      {
+        "mac": "0a0b0c0d0e0f0003",
+        "deviceType": "10000000"
+      },
+      {
+        "mac": "0a0b0c0d0e0f0004",
+        "deviceType": "10000000"
+      },
+      {
+        "mac": "0a0b0c0d0e0f0005",
+        "deviceType": "10000000"
+      },
+      {
+        "mac": "0a0b0c0d0e0f0006",
+        "deviceType": "10000001"
+      },
+      {
+        "mac": "0a0b0c0d0e0f0007",
+        "deviceType": "10000002"
+      },
+      {
+        "mac": "0a0b0c0d0e0f0008",
+        "deviceType": "10000000"
+      }
+    ]
+  },
+  "bridgeState": {
+    "msgType": "ReadDeviceAck",
+    "mac": "0a0b0c0d0e0f",
+    "deviceType": "02000002",
+    "data": {
+      "currentState": 1,
+      "numberOfDevices": 8,
+      "RSSI": -53
+    }
+  },
+  "devices": {
+    "0a0b0c0d0e0f0001": {
+      "msgType": "ReadDeviceAck",
+      "mac": "0a0b0c0d0e0f0001",
+      "deviceType": "10000000",
+      "data": {
+        "type": 1,
+        "operation": 2,
+        "currentPosition": 0,
+        "currentAngle": 0,
+        "currentState": 3,
+        "voltageMode": 1,
+        "batteryLevel": 1197,
+        "chargingState": 0,
+        "wirelessMode": 1,
+        "RSSI": -71
+      }
+    },
+    "0a0b0c0d0e0f0002": {
+      "msgType": "ReadDeviceAck",
+      "mac": "0a0b0c0d0e0f0002",
+      "deviceType": "10000000",
+      "data": {
+        "type": 2,
+        "operation": 2,
+        "currentPosition": 100,
+        "currentAngle": 90,
+        "currentState": 3,
+        "voltageMode": 0,
+        "batteryLevel": 22735,
+        "wirelessMode": 1,
+        "RSSI": -64
+      }
+    },
+    "0a0b0c0d0e0f0003": {
+      "msgType": "ReadDeviceAck",
+      "mac": "0a0b0c0d0e0f0003",
+      "deviceType": "10000000",
+      "data": {
+        "type": 12,
+        "operation": 2,
+        "currentPosition": 40,
+        "currentAngle": 0,
+        "currentState": 3,
+        "voltageMode": 0,
+        "batteryLevel": 23012,
+        "wirelessMode": 1,
+        "RSSI": -58
+      }
+    },
+    "0a0b0c0d0e0f0004": {
+      "msgType": "ReadDeviceAck",
+      "mac": "0a0b0c0d0e0f0004",
+      "deviceType": "10000000",
+      "data": {
+        "type": 6,
+        "operation": 2,
+        "wirelessMode": 0
+      }
+    },
+    "0a0b0c0d0e0f0005": {
+      "msgType": "ReadDeviceAck",
+      "mac": "0a0b0c0d0e0f0005",
+      "deviceType": "10000000",
+      "data": {
+        "type": 7,
+        "operation": 2,
+        "currentPosition": 100,
+        "currentAngle": 0,
+        "currentState": 3,
+        "voltageMode": 0,
+        "batteryLevel": 22950,
+        "wirelessMode": 1,
+        "RSSI": -77
+      }
+    },
+    "0a0b0c0d0e0f0006": {
+      "msgType": "ReadDeviceAck",
+      "mac": "0a0b0c0d0e0f0006",
+      "deviceType": "10000001",
+      "data": {
+        "type": 9,
+        "operation_T": 2,
+        "operation_B": 2,
+        "currentPosition_T": 0,
+        "currentPosition_B": 60,
+        "currentState_T": 3,
+        "currentState_B": 3,
+        "voltageMode": 1,
+        "batteryLevel_T": 1188,
+        "batteryLevel_B": 1121,
+        "wirelessMode": 1,
+        "RSSI": -69
+      }
+    },
+    "0a0b0c0d0e0f0007": {
+      "msgType": "ReadDeviceAck",
+      "mac": "0a0b0c0d0e0f0007",
+      "deviceType": "10000002",
+      "data": {
+        "type": 17,
+        "operation": 2,
+        "currentPosition": 20,
+        "currentAngle": 45,
+        "currentState": 3,
+        "voltageMode": 1,
+        "batteryLevel": 1214,
+        "wirelessMode": 1,
+        "RSSI": -73
+      }
+    },
+    "0a0b0c0d0e0f0008": {
+      "msgType": "ReadDeviceAck",
+      "mac": "0a0b0c0d0e0f0008",
+      "deviceType": "10000000",
+      "data": {
+        "type": 3,
+        "operation": 2,
+        "currentState": 1,
+        "voltageMode": 1,
+        "batteryLevel": 1203,
+        "wirelessMode": 2,
+        "RSSI": -80
+      }
+    }
+  }
+}

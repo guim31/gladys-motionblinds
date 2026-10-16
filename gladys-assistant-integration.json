@@ -1,177 +1,386 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Motionblinds",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Motionblinds blinds, shutters and curtains on the local Motion bridge: position, slats, battery.",
+    "fr": "Stores, volets et rideaux Motionblinds par le pont Motion en local : position, lamelles, batterie.",
+    "de": "Motionblinds-Rollos, Rollläden und Vorhänge über die lokale Motion-Bridge: Position, Lamellen.",
+    "es": "Estores, persianas y cortinas Motionblinds con el puente Motion local: posición, lamas, batería."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-motionblinds:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-motionblinds/main/cover.png",
+  "categories": ["lighting"],
+  "transports": ["local"],
+  "network_discovery": [
+    {
+      "type": "udp-active-broadcast",
+      "ports": [32100]
+    }
+  ],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Connecting to the Motion bridge",
+        "fr": "Se connecter au pont Motion",
+        "de": "Mit der Motion-Bridge verbinden",
+        "es": "Conectarse al puente Motion"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Gladys talks to your Motion Wi-Fi bridge on your network, without the cloud. It needs the key of the Motion app: open the app, tap ⋮, Settings, then tap the \"About\" page five times quickly. The key shows up, 16 characters with dashes.",
+        "fr": "Gladys parle à votre pont Wi-Fi Motion sur votre réseau, sans le cloud. Il lui faut la clé de l'application Motion : ouvrez l'application, touchez ⋮, Réglages, puis touchez cinq fois rapidement la page « À propos ». La clé s'affiche, 16 caractères avec des tirets.",
+        "de": "Gladys spricht mit deiner Motion-WLAN-Bridge in deinem Netzwerk, ohne Cloud. Dafür braucht es den Schlüssel der Motion-App: Öffne die App, tippe auf ⋮, Einstellungen, dann tippe fünfmal schnell auf die Seite „Über“. Der Schlüssel erscheint, 16 Zeichen mit Bindestrichen.",
+        "es": "Gladys se comunica con su puente Wi-Fi Motion en su red, sin la nube. Necesita la clave de la aplicación Motion: abra la aplicación, toque ⋮, Ajustes y luego toque cinco veces rápidamente la página «Acerca de». Aparece la clave, 16 caracteres con guiones."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-motionblinds/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide d'installation",
+            "de": "Installationsanleitung",
+            "es": "Guía de instalación"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "hosts",
+      "type": "string",
+      "label": {
+        "en": "IP address of the Motion bridge",
+        "fr": "Adresse IP du pont Motion",
+        "de": "IP-Adresse der Motion-Bridge",
+        "es": "Dirección IP del puente Motion"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
       "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+        "en": "Shown by your router. Several bridges or Wi-Fi motors: separate them with commas. Left empty, Gladys tries to find the bridge by itself.",
+        "fr": "Visible dans votre box. Plusieurs ponts ou moteurs Wi-Fi : séparez-les par des virgules. Laissée vide, Gladys essaie de trouver le pont toute seule.",
+        "de": "Steht in deinem Router. Mehrere Bridges oder WLAN-Motoren: durch Kommas trennen. Bleibt das Feld leer, sucht Gladys die Bridge selbst.",
+        "es": "Aparece en su router. Varios puentes o motores Wi-Fi: sepárelos con comas. Si lo deja vacío, Gladys intenta encontrar el puente por sí misma."
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
-      "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "placeholder": {
+        "en": "e.g. 192.168.1.40",
+        "fr": "ex. 192.168.1.40",
+        "de": "z. B. 192.168.1.40",
+        "es": "p. ej. 192.168.1.40"
+      },
       "required": false,
-      "default": "celsius",
+      "default": ""
+    },
+    {
+      "key": "key",
+      "type": "secret",
+      "label": {
+        "en": "Key of the Motion app",
+        "fr": "Clé de l'application Motion",
+        "de": "Schlüssel der Motion-App",
+        "es": "Clave de la aplicación Motion"
+      },
+      "description": {
+        "en": "16 characters, dashes included, as the app shows it.",
+        "fr": "16 caractères, tirets compris, comme l'affiche l'application.",
+        "de": "16 Zeichen, Bindestriche eingeschlossen, so wie die App ihn anzeigt.",
+        "es": "16 caracteres, guiones incluidos, tal como la muestra la aplicación."
+      },
+      "placeholder": {
+        "en": "e.g. 12ab345c-d67e-8f",
+        "fr": "ex. 12ab345c-d67e-8f",
+        "de": "z. B. 12ab345c-d67e-8f",
+        "es": "p. ej. 12ab345c-d67e-8f"
+      },
+      "required": true
+    },
+    {
+      "key": "poll_interval",
+      "type": "select",
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Intervalle d'actualisation",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
+      "description": {
+        "en": "How often Gladys reads the state the bridge keeps for each blind, to follow the remote, the Motion app and the timers. It costs the motors nothing.",
+        "fr": "Fréquence à laquelle Gladys lit l'état que le pont garde pour chaque store, pour suivre la télécommande, l'application Motion et les programmations. Cela ne coûte rien aux moteurs.",
+        "de": "Wie oft Gladys den Zustand liest, den die Bridge für jedes Rollo speichert, um Fernbedienung, Motion-App und Zeitpläne zu verfolgen. Das kostet die Motoren nichts.",
+        "es": "Frecuencia con la que Gladys lee el estado que el puente guarda para cada estor, para seguir el mando, la aplicación Motion y las programaciones. No cuesta nada a los motores."
+      },
+      "required": false,
+      "default": "30",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "10",
+          "label": {
+            "en": "10 seconds",
+            "fr": "10 secondes",
+            "de": "10 Sekunden",
+            "es": "10 segundos"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "en": "15 seconds",
+            "fr": "15 secondes",
+            "de": "15 Sekunden",
+            "es": "15 segundos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "60 seconds",
+            "fr": "60 secondes",
+            "de": "60 Sekunden",
+            "es": "60 segundos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "allow_gates",
+      "type": "boolean",
+      "label": {
+        "en": "Allow controlling garage doors and gates",
+        "fr": "Autoriser la commande des portes de garage",
+        "de": "Steuerung von Garagentoren erlauben",
+        "es": "Permitir controlar las puertas de garaje"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Off: garage doors and roller gates are shown without their controls, and the widget never moves them. They open the house: turn it on only if you need it.",
+        "fr": "Désactivé : les portes de garage et portes roulantes sont affichées sans leurs commandes, et le widget ne les bouge jamais. Elles ouvrent la maison : activez seulement si nécessaire.",
+        "de": "Aus: Garagentore und Rolltore werden ohne ihre Bedienelemente angezeigt, und das Widget bewegt sie nie. Diese Tore öffnen das Haus: Schalte es nur ein, wenn du es brauchst.",
+        "es": "Desactivado: las puertas de garaje y enrollables se muestran sin sus controles y el widget nunca las mueve. Abren la casa: actívelo solo si lo necesita."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": false
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the device names",
+        "fr": "Langue des noms des appareils",
+        "de": "Sprache der Gerätenamen",
+        "es": "Idioma de los nombres de los dispositivos"
+      },
+      "description": {
+        "en": "Names given to new blinds and their features (Roller blind, Position, Slat tilt...).",
+        "fr": "Noms donnés aux nouveaux stores et à leurs fonctionnalités (Store enrouleur, Position, Inclinaison des lamelles…).",
+        "de": "Namen, die neuen Rollos und ihren Funktionen gegeben werden (Rollo, Position, Lamellenneigung…).",
+        "es": "Nombres dados a los nuevos estores y a sus funciones (Estor enrollable, Posición, Inclinación de las lamas…)."
+      },
+      "required": false,
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "search",
+      "label": {
+        "en": "Search for bridges and blinds",
+        "fr": "Rechercher les ponts et les stores",
+        "de": "Bridges und Rollos suchen",
+        "es": "Buscar puentes y estores"
+      },
+      "description": {
+        "en": "Looks for the Motion bridges again, lists their blinds and checks the key (a status query, nothing moves).",
+        "fr": "Recherche à nouveau les ponts Motion, liste leurs stores et vérifie la clé (une demande d'état, rien ne bouge).",
+        "de": "Sucht erneut nach Motion-Bridges, listet ihre Rollos auf und prüft den Schlüssel (eine Statusabfrage, nichts bewegt sich).",
+        "es": "Busca de nuevo los puentes Motion, enumera sus estores y comprueba la clave (una consulta de estado, nada se mueve)."
+      },
+      "timeout_seconds": 60
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "moved_outside_gladys",
+      "label": {
+        "en": "Blind moved outside Gladys",
+        "fr": "Store bougé hors de Gladys",
+        "de": "Rollo außerhalb von Gladys bewegt",
+        "es": "Estor movido fuera de Gladys"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "A Motion blind changed position without a Gladys command: from its remote, the Motion app, a Motion timer or a sun sensor.",
+        "fr": "Un store Motion a changé de position sans commande de Gladys : depuis sa télécommande, l'application Motion, une programmation Motion ou un capteur solaire.",
+        "de": "Ein Motion-Rollo hat seine Position ohne Befehl von Gladys geändert: über seine Fernbedienung, die Motion-App, einen Motion-Zeitplan oder einen Sonnensensor.",
+        "es": "Un estor Motion cambió de posición sin una orden de Gladys: desde su mando, la aplicación Motion, una programación Motion o un sensor solar."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Motion blind",
+            "fr": "Store Motion",
+            "de": "Motion-Rollo",
+            "es": "Estor Motion"
+          }
         },
         {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "key": "direction",
+          "type": "select",
+          "label": {
+            "en": "Direction",
+            "fr": "Sens",
+            "de": "Richtung",
+            "es": "Sentido"
+          },
+          "description": {
+            "en": "Leave empty for both.",
+            "fr": "Laisser vide pour les deux.",
+            "de": "Leer lassen für beides.",
+            "es": "Déjelo vacío para ambos."
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "opening",
+              "label": {
+                "en": "Opened",
+                "fr": "Ouvert",
+                "de": "Geöffnet",
+                "es": "Abierto"
+              }
+            },
+            {
+              "value": "closing",
+              "label": {
+                "en": "Closed",
+                "fr": "Fermé",
+                "de": "Geschlossen",
+                "es": "Cerrado"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "direction",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Direction (opening, closing)",
+            "fr": "Sens (opening, closing)",
+            "de": "Richtung (opening, closing)",
+            "es": "Sentido (opening, closing)"
+          }
+        },
+        {
+          "key": "position",
+          "type": "number",
+          "label": {
+            "en": "New position (%)",
+            "fr": "Nouvelle position (%)",
+            "de": "Neue Position (%)",
+            "es": "Nueva posición (%)"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "go_favorite",
+      "label": {
+        "en": "Go to the favorite position",
+        "fr": "Aller à la position favorite",
+        "de": "Lieblingsposition anfahren",
+        "es": "Ir a la posición favorita"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Moves a Motion blind to the favorite position stored in its motor, set with the Motion remote.",
+        "fr": "Amène un store Motion à la position favorite enregistrée dans son moteur, réglée avec la télécommande Motion.",
+        "de": "Fährt ein Motion-Rollo in die Lieblingsposition, die in seinem Motor gespeichert ist und mit der Motion-Fernbedienung eingestellt wurde.",
+        "es": "Lleva un estor Motion a la posición favorita guardada en su motor, ajustada con el mando Motion."
+      },
+      "timeout_seconds": 20,
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Motion blind",
+            "fr": "Store Motion",
+            "de": "Motion-Rollo",
+            "es": "Estor Motion"
+          },
           "required": true
-        }
-      ],
-      "outputs": [
-        {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "blinds",
+      "label": {
+        "en": "Motion blinds",
+        "fr": "Stores Motion",
+        "de": "Motion-Rollos",
+        "es": "Estores Motion"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Every Motion blind at a glance, low batteries, and open, stop or close them all at once.",
+        "fr": "Tous les stores Motion d'un coup d'œil, les batteries faibles, et tout ouvrir, arrêter ou fermer.",
+        "de": "Alle Motion-Rollos auf einen Blick, schwache Akkus, und alle auf einmal öffnen, stoppen, schließen.",
+        "es": "Todos los estores Motion de un vistazo, baterías bajas, y abrir, detener o cerrar todos a la vez."
+      },
+      "icon": "sliders",
+      "action_timeout_seconds": 60
     }
   ]
 }
